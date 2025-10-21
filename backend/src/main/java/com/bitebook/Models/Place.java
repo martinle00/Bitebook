@@ -1,0 +1,70 @@
+package com.bitebook.Models;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import java.util.UUID;
+
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@Entity
+@Table(name = "\"Places\"", schema = "public")
+@Getter
+@Setter
+@NoArgsConstructor
+@Access(AccessType.FIELD)
+public class Place {
+
+    @Id
+    @Column(name = "\"PlaceId\"")
+    private UUID placeId;
+
+    @Column(name = "\"Name\"")
+    private String name;
+
+    @Column(name = "\"Cuisine\"")
+    private String cuisine;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "\"Type\"")
+    private PlaceType type;
+
+    @Column(name = "\"Location\"")
+    private String location;
+
+    @Column(name = "\"Influence\"")
+    private String influence;
+
+    @Column(name = "\"Visited\"")
+    private Boolean visited;
+
+    @Column(name = "\"Notes\"")
+    private String notes;
+
+    @Column(name = "\"Rating\"")
+    private Double rating;
+
+    @Column(name = "\"Website\"")
+    private String website;
+
+    @Column(name = "\"SocialMedia\"")
+    private String socialMedia;
+
+    @Column(name="\"GooglePlaceId\"")
+    private String googlePlaceId;
+
+    // Explicit getters for fields referenced directly in code. These are provided so
+    // compilation does not fail if Lombok annotation processing is not active.
+    public String getName() {
+        return this.name;
+    }
+
+    public PlaceType getType() {
+        return this.type;
+    }
+
+    public Boolean getVisited() {
+        return this.visited;
+    }
+}
