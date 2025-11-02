@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.bitebook</groupId>
 	<artifactId>bitebook</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>Bitebook</name>
 	<description>Project that will allow users to track restaurants/cafes/bars that they want to/have been to.</description>
 	<url/>
