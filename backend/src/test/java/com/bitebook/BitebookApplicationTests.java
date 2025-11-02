@@ -11,7 +11,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 		"spring.datasource.username=sa",
 		"spring.datasource.password=",
 		"spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-		"spring.jpa.hibernate.ddl-auto=create-drop"
+		"spring.jpa.hibernate.ddl-auto=create-drop",
+		"spring.cloud.aws.parameterstore.enabled=false",
+		"spring.cloud.aws.region.static=ap-southeast-2"
 })
 class BitebookApplicationTests {
 
