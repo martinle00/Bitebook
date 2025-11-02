@@ -12,6 +12,7 @@ const AWS_REGION = process.env.AWS_REGION || 'ap-southeast-2';
 // Map SSM parameter names to environment variable names
 const PARAMETERS = {
   'GoogleMapsApiKey': 'VITE_GOOGLE_MAPS_API_KEY',
+  'BitebookProd': 'VITE_API_BASE_URL',
 };
 
 async function fetchSSMParameter(client, parameterName) {

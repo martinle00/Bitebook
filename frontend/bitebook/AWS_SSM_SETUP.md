@@ -35,12 +35,20 @@ $env:AWS_PROFILE="your-profile-name"
 Store your parameters in AWS SSM Parameter Store with the following structure:
 
 ```bash
-# Using AWS CLI
+# Using AWS CLI (ap-southeast-2 region)
+# Google Maps API Key
 aws ssm put-parameter `
-  --name "/bitebook/frontend/VITE_GOOGLE_MAPS_API_KEY" `
+  --name "GoogleMapsApiKey" `
   --value "your-google-maps-api-key" `
   --type "SecureString" `
-  --region us-east-1
+  --region ap-southeast-2
+
+# Backend API URL
+aws ssm put-parameter `
+  --name "BackendApiUrl" `
+  --value "http://3.107.47.27:8080" `
+  --type "String" `
+  --region ap-southeast-2
 
 # Add more parameters as needed
 ```
@@ -81,8 +89,9 @@ This requires a manually created `.env` file.
 The following environment variables are loaded from SSM:
 
 - `VITE_GOOGLE_MAPS_API_KEY` - Google Maps API Key
+- `VITE_API_BASE_URL` - Backend API Base URL (e.g., http://3.107.47.27:8080)
 
-To add more variables, edit `scripts/load-ssm-params.js` and add them to the `PARAMETERS` array.
+To add more variables, edit `scripts/load-ssm-params.js` and add them to the `PARAMETERS` object.
 
 ## Configuration Options
 

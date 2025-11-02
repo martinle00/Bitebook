@@ -14,6 +14,9 @@ type CacheShape = { ts: number; data: Place[] } | null;
 let placesCache: CacheShape = null;
 const CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
 
+// Get API base URL from environment variable
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080';
+
 export default function App() {
   // Load Google Maps API on app initialization
   useLoadGoogleMaps();
@@ -38,7 +41,7 @@ export default function App() {
         return;
       }
 
-      const res = await fetch("http://3.107.47.27/places/feed");
+      const res = await fetch(`${API_BASE_URL}/places/feed`);
       if (!res.ok) {
         throw new Error("Failed to fetch places");
       }
@@ -62,7 +65,7 @@ export default function App() {
   const handleAddPlace = async (newPlace: Omit<Place, "placeId">) => {
     try {
       // Save to backend first
-      const response = await fetch('http://3.107.47.27/places/add', {
+      const response = await fetch(`${API_BASE_URL}/places/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -126,7 +129,7 @@ export default function App() {
     
     try {
       // Send update to backend
-      const response = await fetch(`http://3.107.47.27/places/update/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/places/update/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -188,7 +191,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch(`http://3.107.47.27/places/delete/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/places/delete/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
