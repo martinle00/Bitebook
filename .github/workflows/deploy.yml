@@ -76,7 +76,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             sudo mkdir -p ${{ secrets.FRONTEND_DEPLOY_DIR }}
-            sudo chown -R $USER:$USER ${{ secrets.FRONTEND_DEPLOY_DIR }}
+            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} ${{ secrets.FRONTEND_DEPLOY_DIR }}
 
       - name: Clear old frontend build
         uses: appleboy/ssh-action@v1.0.0
