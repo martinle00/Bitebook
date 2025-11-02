@@ -38,7 +38,7 @@ export default function App() {
         return;
       }
 
-      const res = await fetch("http://localhost:8080/places/feed");
+      const res = await fetch("http://3.107.208.156/places/feed");
       if (!res.ok) {
         throw new Error("Failed to fetch places");
       }
@@ -62,7 +62,7 @@ export default function App() {
   const handleAddPlace = async (newPlace: Omit<Place, "placeId">) => {
     try {
       // Save to backend first
-      const response = await fetch('http://localhost:8080/places/add', {
+      const response = await fetch('http://3.107.208.156/places/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -126,7 +126,7 @@ export default function App() {
     
     try {
       // Send update to backend
-      const response = await fetch(`http://localhost:8080/places/update/${id}`, {
+      const response = await fetch(`http://3.107.208.156/places/update/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -188,7 +188,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/places/delete/${id}`, {
+      const response = await fetch(`http://3.107.208.156/places/delete/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

@@ -18,10 +18,10 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
 
         String localhostUrl = parameterStoreService.getSecret("LocalHostURL");
-//        String prodUrl = parameterStoreService.getSecret("ProdURL");
+        String prodUrl = parameterStoreService.getSecret("ProdURL");
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin(localhostUrl);
-        // config.addAllowedOrigin(prodUrl);
+        config.addAllowedOrigin(prodUrl);
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);
