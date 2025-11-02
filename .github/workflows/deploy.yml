@@ -26,7 +26,7 @@ jobs:
 
       - name: Build with Maven
         working-directory: backend
-        run: mvn clean package -Dmaven.test.skip=true
+        run: mvn clean package -Dmaven.test.skip=true -B
 
       - name: List build artifacts
         run: ls -al backend/target/
@@ -93,7 +93,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: frontend/in-office-tracker/build/*
+          source: frontend/bitebook/build/*
           target: ${{ secrets.FRONTEND_DEPLOY_DIR }}
 
       - name: Reload Nginx
