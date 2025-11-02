@@ -95,6 +95,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: frontend/bitebook/build/*
           target: ${{ secrets.FRONTEND_DEPLOY_DIR }}
+          strip_components: 3
 
       - name: Reload Nginx
         uses: appleboy/ssh-action@v1.0.0
