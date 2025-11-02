@@ -71,6 +71,9 @@ jobs:
         run: |
           GOOGLE_MAPS_KEY=$(aws ssm get-parameter --name "GoogleMapsApiKey" --with-decryption --query "Parameter.Value" --output text)
           API_BASE_URL=$(aws ssm get-parameter --name "BitebookProd" --with-decryption --query "Parameter.Value" --output text)
+          echo "VITE_GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_KEY" >> $GITHUB_ENV
+          echo "VITE_API_BASE_URL=$API_BASE_URL" >> $GITHUB_ENV
+          echo "✓ Parameters loaded from AWS SSM"
 
       - name: Build React frontend
         working-directory: ./frontend/bitebook
