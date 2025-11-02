@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Date;
 import java.util.UUID;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -54,17 +56,9 @@ public class Place {
     @Column(name="\"GooglePlaceId\"")
     private String googlePlaceId;
 
-    // Explicit getters for fields referenced directly in code. These are provided so
-    // compilation does not fail if Lombok annotation processing is not active.
-    public String getName() {
-        return this.name;
-    }
+    @Column(name="\"LastUpdatedDateTime\"")
+    private Date lastUpdatedDateTime;
 
-    public PlaceType getType() {
-        return this.type;
-    }
-
-    public Boolean getVisited() {
-        return this.visited;
-    }
+    @Column(name="\"CreatedDateTime\"")
+    private Date createdDateTime;
 }

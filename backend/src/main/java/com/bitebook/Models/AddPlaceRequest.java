@@ -18,4 +18,5 @@ public class AddPlaceRequest {
     private String website;
     private String socialMedia;
     private Double rating;
+    private String googlePlaceId;
 }

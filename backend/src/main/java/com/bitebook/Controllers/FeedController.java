@@ -2,6 +2,8 @@ package com.bitebook.Controllers;
 
 import com.bitebook.Models.AddPlaceRequest;
 import com.bitebook.Models.Place;
+import com.bitebook.Models.UpdatePlaceRequest;
+import com.bitebook.Models.PlaceDetailsResponse;
 import com.bitebook.Services.FeedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,8 +25,31 @@ public class FeedController {
         return feedService.GetFeed(type, visited);
     }
 
-//    @PostMapping("/add")
-//    public void AddPlace(@RequestBody AddPlaceRequest request) {
-//        feedService.AddPlace(request);
-//    }
+    @PostMapping("/add")
+    public void AddPlace(@RequestBody AddPlaceRequest request) {
+        feedService.AddPlace(request);
+    }
+
+    @PostMapping("/update/{placeId}")
+    public void UpdatePlace(
+            @PathVariable String placeId,
+            @RequestBody UpdatePlaceRequest request) {
+        feedService.UpdatePlace(placeId, request);
+    }
+
+    @PutMapping("/delete/{placeId}")
+    public void DeletePlace(@PathVariable String placeId) {
+        feedService.DeletePlace(placeId);
+    }
+
+    @GetMapping("/test")
+    public void TestGoogle() {
+        feedService.TestGoogle();
+    }
+
+    @GetMapping("/test-details")
+    public PlaceDetailsResponse TestGoogleDetails() {
+        return feedService.TestGoogleReturn();
+    }
+
 }
