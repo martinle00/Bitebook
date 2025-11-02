@@ -18,7 +18,7 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
 
         String localhostUrl = parameterStoreService.getSecret("LocalHostURL");
-        String prodUrl = parameterStoreService.getSecret("ProdURL");
+        String prodUrl = parameterStoreService.getSecret("BitebookProd");
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin(localhostUrl);
         config.addAllowedOrigin(prodUrl);
