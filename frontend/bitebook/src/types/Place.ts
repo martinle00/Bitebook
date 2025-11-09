@@ -6,7 +6,19 @@ export interface Place {
     visited: boolean;
     rating?: number;
     notes?: string;
+    website?: string;
+    socialMediaLinks?: { [key: string]: string };
     googlePlaceId?: string;
-    LastUpdatedDateTime?: Date;
-    CreatedDateTime?: Date;
+    lastUpdatedDateTime?: Date;
+    createdDateTime?: Date;
+    fullAddress?: string;
+    openingHours?: { [key: string]: Array<OpeningHoursPeriod> };
+    isPermanentlyClosed?: boolean;
+}
+
+interface OpeningHoursPeriod {
+  openingHour: number;
+  openingMinute: number;
+  closingHour: number;
+  closingMinute: number;
 }

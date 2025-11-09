@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import type { Place } from "../types/Place";
-import { MapPin, Star, Check, UtensilsCrossed, Coffee, Wine, Trash2 } from "lucide-react";
+import { MapPin, Star, Check, UtensilsCrossed, Coffee, Wine, Trash2, XCircle } from "lucide-react";
 
 // export interface Place {
 //   id: string;
@@ -28,6 +28,7 @@ interface PlaceCardProps {
   place: Place;
   onToggleVisited: (id: string) => void;
   onDelete: (id: string) => void;
+  onCardClick: (place: Place) => void;
 }
 
 const getTypeIcon = (type: string) => {
@@ -56,20 +57,49 @@ const getTypeLabel = (type: string) => {
   }
 };
 
-export function PlaceCard({ place, onToggleVisited, onDelete }: PlaceCardProps) {
+export function PlaceCard({ place, onToggleVisited, onDelete, onCardClick }: PlaceCardProps) {
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open dialog if clicking on buttons
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return;
+    }
+    onCardClick(place);
+  };
+  
   return (
     <Card 
-      className={`overflow-hidden hover:shadow-xl transition-all duration-200 ${
-        place.visited ? "bg-green-50/30" : "bg-white"
+      className={`overflow-hidden hover:shadow-xl transition-all duration-200 relative group cursor-pointer ${
+        place.isPermanentlyClosed
+          ? "bg-gray-200 opacity-50" 
+          : place.visited 
+          ? "bg-green-50/30" 
+          : "bg-white"
       }`}
+      onClick={handleCardClick}
     >
       <div className="p-4 sm:p-5">
         {/* Title and Type Badge */}
         <div className="flex items-start gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg sm:text-xl mb-1 truncate">{place.name}</h3>
+            <h3 
+              className={`text-lg sm:text-xl mb-1 truncate ${place.isPermanentlyClosed === true ? 'text-gray-500' : 'text-gray-900'}`}
+              style={place.isPermanentlyClosed ? { textDecoration: 'line-through' } : undefined}
+            >
+              {place.name}
+            </h3>
           </div>
         </div>
+
+        {/* Permanently Closed Badge */}
+        {place.isPermanentlyClosed && (
+          <div className="mb-3">
+            <Badge variant="secondary" className="bg-red-100 text-red-700 border-red-200">
+              <XCircle className="w-3 h-3 mr-1" />
+              Permanently Closed
+            </Badge>
+          </div>
+        )}
 
         {/* Type with Icon */}
         <div className="flex items-center gap-1.5 text-gray-600 mb-2">

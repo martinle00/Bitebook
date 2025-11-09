@@ -8,11 +8,12 @@ const __dirname = dirname(__filename);
 
 // Configuration
 const AWS_REGION = process.env.AWS_REGION || 'ap-southeast-2';
+const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Map SSM parameter names to environment variable names
 const PARAMETERS = {
   'GoogleMapsApiKey': 'VITE_GOOGLE_MAPS_API_KEY',
-  'BitebookProd': 'VITE_API_BASE_URL',
+  'BackendApiUrl': 'VITE_API_BASE_URL',
 };
 
 async function fetchSSMParameter(client, parameterName) {
@@ -51,11 +52,12 @@ async function loadSSMParameters() {
   const envContent = Object.entries(envVars)
     .map(([key, value]) => `${key}=${value}`)
     .join('\n');
-  
-  const envPath = join(__dirname, '..', '.env');
+  // Write to appropriate .env file based on environment
+  const envFileName = NODE_ENV === 'production' ? '.env.production' : '.env.development';
+  const envPath = join(__dirname, '..', envFileName);
   writeFileSync(envPath, envContent + '\n');
   
-  console.log(`\n✓ Environment variables written to .env`);
+  console.log(`\n✓ Environment variables written to ${envFileName}`);
   console.log(`Total parameters loaded: ${Object.keys(envVars).length}`);
 }
 

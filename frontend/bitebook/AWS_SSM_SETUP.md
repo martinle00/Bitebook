@@ -69,20 +69,23 @@ npm run dev
 ```
 This will:
 1. Fetch parameters from AWS SSM
-2. Write them to `.env` file
-3. Start the Vite dev server
+2. Write them to `.env.development` file
+3. Start the Vite dev server with development environment
 
-### Build with SSM
+The development environment will automatically use `http://localhost:8080` as the backend URL (as specified in `.env.development`).
+
+### Build with SSM (Production)
 ```bash
-npm run build
+NODE_ENV=production npm run build
 ```
+This will fetch production parameters from SSM and write to `.env.production`.
 
 ### Local Development (without SSM)
-If you want to develop locally without SSM, use:
+If you want to develop locally without SSM, the project will automatically use `.env.development`:
 ```bash
 npm run dev:local
 ```
-This requires a manually created `.env` file.
+This requires a manually created `.env.development` file with your local backend URL.
 
 ## Environment Variables
 

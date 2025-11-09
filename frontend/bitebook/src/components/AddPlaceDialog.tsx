@@ -158,6 +158,17 @@ export function AddPlaceDialog({ onAddPlace }: AddPlaceDialogProps) {
         <Input id="location" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Enter location" required />
       </div>
 
+      <div>
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea 
+          id="notes" 
+          value={formData.notes} 
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })} 
+          placeholder="Add notes about this place" 
+          rows={3} 
+        />
+      </div>
+
       {formData.visited && (
         <>
           <div>
@@ -167,23 +178,13 @@ export function AddPlaceDialog({ onAddPlace }: AddPlaceDialogProps) {
               type="number" 
               min="0" 
               max="5" 
-              step="0.1" 
+              step="0.5" 
               value={formData.rating} 
               onChange={(e) => setFormData({ ...formData, rating: e.target.value })} 
               placeholder="0-5" 
             />
           </div>
 
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea 
-              id="notes" 
-              value={formData.notes} 
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })} 
-              placeholder="Add notes about this place" 
-              rows={3} 
-            />
-          </div>
         </>
       )}
 

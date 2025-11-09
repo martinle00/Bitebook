@@ -8,6 +8,7 @@ import type { Place } from "./types/Place";
 import type { FilterState } from "./components/FilterBar";
 import { MapPin, CheckCircle2, Clock } from "lucide-react";
 import { toast, Toaster } from "sonner";
+import { PlaceDetailsDialog } from "./components/PlaceDetailsDialog";
 
 // Module-level cache (persists for the session)
 type CacheShape = { ts: number; data: Place[] } | null;
@@ -62,6 +63,29 @@ export default function App() {
 
   const handleRefresh = () => fetchPlaces(true);
 
+  const handleGetPlace = async (placeId: string): Promise<Place | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/places/place/${placeId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch place details');
+      }
+
+      const placeData: Place = await response.json();
+      return placeData;
+    }
+    catch(error) {
+      console.error('Error fetching place details:', error);
+      toast.error('Failed to fetch place details.');
+      return null;
+    }
+  }
+
   const handleAddPlace = async (newPlace: Omit<Place, "placeId">) => {
     try {
       // Save to backend first
@@ -97,6 +121,7 @@ export default function App() {
 
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   
   const handleToggleVisited = async (id: string) => {
     const placeToUpdate = places.find(p => p.placeId === id);
@@ -164,6 +189,26 @@ export default function App() {
       console.error('Error updating place:', error);
       toast.error(`Failed to update ${placeToUpdate.name}. Please try again.`);
     }
+  };
+
+  const handleCardClick = async (place: Place) => {
+    // Fetch the latest place details from backend
+    const latestPlace = await handleGetPlace(place.placeId);
+    
+    // Use the latest data if available, otherwise fallback to the place passed in
+    setSelectedPlace(latestPlace || place);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleUpdatePlace = (
+    id: string,
+    updates: Partial<Place>,
+  ) => {
+    setPlaces(
+      places.map((place) =>
+        place.placeId === id ? { ...place, ...updates } : place,
+      ),
+    );
   };
 
   const handleRateDialogClose = () => {
@@ -270,16 +315,16 @@ export default function App() {
       switch (filters.sortBy) {
         case "recentlyAdded":
           // Recently added first (null dates go to the end)
-          if (!a.CreatedDateTime && !b.CreatedDateTime) return 0;
-          if (!a.CreatedDateTime) return 1;
-          if (!b.CreatedDateTime) return -1;
-          return b.CreatedDateTime.getTime() - a.CreatedDateTime.getTime();
+          if (!a.createdDateTime && !b.createdDateTime) return 0;
+          if (!a.createdDateTime) return 1;
+          if (!b.createdDateTime) return -1;
+          return b.createdDateTime.getTime() - a.createdDateTime.getTime();
         case "recentlyEdited":
           // Recently edited first (null dates go to the end)
-          if (!a.LastUpdatedDateTime && !b.LastUpdatedDateTime) return 0;
-          if (!a.LastUpdatedDateTime) return 1;
-          if (!b.LastUpdatedDateTime) return -1;
-          return b.LastUpdatedDateTime.getTime() - a.LastUpdatedDateTime.getTime();
+          if (!a.lastUpdatedDateTime && !b.lastUpdatedDateTime) return 0;
+          if (!a.lastUpdatedDateTime) return 1;
+          if (!b.lastUpdatedDateTime) return -1;
+          return b.lastUpdatedDateTime.getTime() - a.lastUpdatedDateTime.getTime();
         case "alphabetical":
           return a.name.localeCompare(b.name);
         
@@ -360,6 +405,7 @@ export default function App() {
                 place={place}
                 onToggleVisited={handleToggleVisited}
                 onDelete={handleDeletePlace}
+                onCardClick={handleCardClick}
               />
             ))}
           </div>
@@ -371,6 +417,13 @@ export default function App() {
           </div>
         )}
       </div>
+      <PlaceDetailsDialog
+          place={selectedPlace}
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+          onUpdatePlace={handleUpdatePlace}
+      />
     </div>
+
   );
 }

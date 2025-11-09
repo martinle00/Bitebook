@@ -1,17 +1,17 @@
 package com.bitebook.Services;
 
 import com.bitebook.Interfaces.GooglePlacesApiClient;
-import com.bitebook.Models.AddPlaceRequest;
-import com.bitebook.Models.Place;
-import com.bitebook.Models.PlaceType;
-import com.bitebook.Models.UpdatePlaceRequest;
+import com.bitebook.Models.*;
 import com.bitebook.Repositories.PlaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class FeedService {
@@ -19,14 +19,69 @@ public class FeedService {
     @Autowired
     private PlaceRepository placeRepository;
 
-    // Depend on the interface so the implementation can be swapped or mocked in tests.
     @Autowired
     private GooglePlacesApiClient googleProxy;
+
+    @Autowired
+    private CaffeineCacheManager cacheManager;
 
     public List<Place> GetAllPlaces() {
         List<Place> places = placeRepository.findAll();
         places.forEach(p -> System.out.println(p.getName()));
         return places;
+    }
+
+    @Cacheable("places")
+    public Place GetPlace(String placeId) {
+        UUID convertedUuid = UUID.fromString(placeId);
+
+        Place place = placeRepository.findById(convertedUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Place not found: " + convertedUuid));
+
+        // Enrich place details with Google Places data
+        PlaceDetailsResponse placeDetails = place.getGooglePlaceId() == null
+                ? GetPlaceDetailsByName(place)
+                : GetPlaceDetails(place.getGooglePlaceId());
+
+        if (place.getIsPermanentlyClosed() == null)
+        {
+            place.setIsPermanentlyClosed(placeDetails.getBusinessStatus().contains("CLOSED"));
+        }
+
+        if (placeDetails.getOpeningHours() != null)
+        {
+            Map<String, List<Place.OpeningHoursPeriod>> openingHoursMap = convertToOpeningHoursMap(placeDetails.getOpeningHours());
+            place.setOpeningHours(openingHoursMap);
+        }
+
+        return place;
+    }
+
+    @Cacheable("placeDetails")
+    private PlaceDetailsResponse GetPlaceDetails(String googlePlaceId) {
+        return googleProxy.getPlaceDetails(googlePlaceId);
+    }
+    @Cacheable("placeDetails")
+    private PlaceDetailsResponse GetPlaceDetailsByName(Place place) {
+        try {
+            PlaceDetailsListResponse placeDetails = googleProxy.getPlaceDetailsByName(place.getName());
+            List<PlaceDetailsResponse> placeResponse = placeDetails.getPlaces();
+
+            if (placeResponse == null || placeResponse.isEmpty()) {
+                throw new IllegalArgumentException("No place found with name: " + place.getName());
+            }
+
+            PlaceDetailsResponse matchedPlace = placeResponse.getFirst();
+            place.setGooglePlaceId(matchedPlace.getGooglePlaceId());
+            place.setFullAddress(matchedPlace.getFormattedAddress());
+            place.setWebsite(matchedPlace.getWebsite());
+            place.setIsPermanentlyClosed(matchedPlace.getBusinessStatus().contains("CLOSED"));
+            placeRepository.save(place);
+            invalidateCache("placeDetails", place.getPlaceId().toString());
+            return matchedPlace;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Place> GetFeed(String type, Boolean visited) {
@@ -67,9 +122,46 @@ public class FeedService {
         newPlace.setLastUpdatedDateTime(new Date());
         newPlace.setCreatedDateTime(new Date());
 
+        PlaceDetailsResponse placeDetails = googleProxy.getPlaceDetails(request.getGooglePlaceId());
+        if (placeDetails != null)
+        {
+            newPlace.setIsPermanentlyClosed(placeDetails.getBusinessStatus().contains("CLOSED"));
+            if (!newPlace.getIsPermanentlyClosed())
+            {
+                newPlace.setOpeningHours(convertToOpeningHoursMap(placeDetails.getOpeningHours()));
+            }
+            newPlace.setFullAddress(placeDetails.getFormattedAddress());
+            newPlace.setWebsite(placeDetails.getWebsite());
+        }
+
+
         placeRepository.save(newPlace);
     }
 
+    private Map<String, List<Place.OpeningHoursPeriod>> convertToOpeningHoursMap(PlaceDetailsResponse.OpeningHour regularOpeningHours) {
+        Map<String, List<Place.OpeningHoursPeriod>> map = new HashMap<>();
+
+        if (regularOpeningHours.getOpeningHours() != null) {
+            regularOpeningHours.getOpeningHours().forEach((day, periodList) -> {
+                List<Place.OpeningHoursPeriod> hoursPeriods = new ArrayList<>();
+
+                for (PlaceDetailsResponse.Period period : periodList) {
+                    Place.OpeningHoursPeriod hoursPeriod = new Place.OpeningHoursPeriod();
+                    hoursPeriod.setOpeningHour(period.getOpeningHour());
+                    hoursPeriod.setOpeningMinute(period.getOpeningMinute());
+                    hoursPeriod.setClosingHour(period.getClosingHour());
+                    hoursPeriod.setClosingMinute(period.getClosingMinute());
+                    hoursPeriods.add(hoursPeriod);
+                }
+
+                map.put(day, hoursPeriods);
+            });
+        }
+
+        return map;
+    }
+
+    @CachePut(value = "places", key = "#placeId")
     public void UpdatePlace(String placeId, UpdatePlaceRequest request)
     {
         UUID convertedUuid = UUID.fromString(placeId);
@@ -82,19 +174,17 @@ public class FeedService {
         placeRepository.save(existingPlace);
     }
 
+    @CacheEvict(value = "places", key = "#placeId")
     public void DeletePlace(String placeId) {
         UUID convertedUuid = UUID.fromString(placeId);
         placeRepository.deleteById(convertedUuid);
     }
 
-    public void TestGoogle()
-    {
-        googleProxy.getPlaceDetails("ChIJN1t_tDeuEmsRUsoyG83frY4");
-    }
-
-    // Return details from Google Places for testing/diagnostics
-    public com.bitebook.Models.PlaceDetailsResponse TestGoogleReturn() {
-        return googleProxy.getPlaceDetails("ChIJMenicgakEmsRyjNyd22MYGg");
+    public void UpdateDb(List<String> idList) {
+        for (String placeId : idList) {
+            Place place = GetPlace(placeId);
+            GetPlaceDetailsByName(place);
+        }
     }
 
     private PlaceType parsePlaceType(String type) {
@@ -109,6 +199,13 @@ public class FeedService {
     private Boolean parseVisited(String visited) {
         if (visited == null || visited.isBlank()) return null;
         return Boolean.valueOf(visited.trim());
+    }
+
+    private void invalidateCache(String cacheName, String key) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.evict(key);
+        }
     }
 
 

@@ -6,8 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @Entity
@@ -61,4 +60,23 @@ public class Place {
 
     @Column(name="\"CreatedDateTime\"")
     private Date createdDateTime;
+
+    @Column(name="\"FullAddress\"")
+    private String fullAddress;
+
+    @Column(name="\"IsPermanentlyClosed\"")
+    private Boolean isPermanentlyClosed;
+
+    @Transient
+    private Map<String, List<OpeningHoursPeriod>> openingHours = new HashMap<>();
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static class OpeningHoursPeriod {
+        private int openingHour;
+        private int openingMinute;
+        private int closingHour;
+        private int closingMinute;
+    }
 }
