@@ -30,8 +30,8 @@ public class FeedController {
     }
 
     @PostMapping("/add")
-    public void AddPlace(@RequestBody AddPlaceRequest request) {
-        feedService.AddPlace(request);
+    public Place AddPlace(@RequestBody AddPlaceRequest request) {
+        return feedService.AddPlace(request);
     }
 
     @PostMapping("/update/{placeId}")

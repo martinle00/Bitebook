@@ -9,6 +9,16 @@ import type { FilterState } from "./components/FilterBar";
 import { MapPin, CheckCircle2, Clock } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { PlaceDetailsDialog } from "./components/PlaceDetailsDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./components/ui/alert-dialog";
 
 // Module-level cache (persists for the session)
 type CacheShape = { ts: number; data: Place[] } | null;
@@ -71,12 +81,22 @@ export default function App() {
           'Content-Type': 'application/json'
         }
       });
-
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error response: ${errorText}`);
         throw new Error('Failed to fetch place details');
       }
 
-      const placeData: Place = await response.json();
+      // Check if response has content before parsing
+      const responseText = await response.text();
+      
+      if (!responseText || responseText.trim() === '') {
+        console.warn('Empty response from backend');
+        return null;
+      }
+
+      const placeData: Place = JSON.parse(responseText);
       return placeData;
     }
     catch(error) {
@@ -122,6 +142,8 @@ export default function App() {
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [unvisitConfirmDialogOpen, setUnvisitConfirmDialogOpen] = useState(false);
+  const [placeToUnvisit, setPlaceToUnvisit] = useState<Place | null>(null);
   
   const handleToggleVisited = async (id: string) => {
     const placeToUpdate = places.find(p => p.placeId === id);
@@ -134,8 +156,22 @@ export default function App() {
       return;
     }
 
-    // Otherwise proceed with marking as not visited
-    await updatePlaceVisited(id, false);
+    // If unmarking as visited, show confirmation dialog
+    setPlaceToUnvisit(placeToUpdate);
+    setUnvisitConfirmDialogOpen(true);
+  };
+
+  const handleConfirmUnvisit = async () => {
+    if (placeToUnvisit) {
+      await updatePlaceVisited(placeToUnvisit.placeId, false, undefined, undefined);
+    }
+    setUnvisitConfirmDialogOpen(false);
+    setPlaceToUnvisit(null);
+  };
+
+  const handleCancelUnvisit = () => {
+    setUnvisitConfirmDialogOpen(false);
+    setPlaceToUnvisit(null);
   };
 
   const updatePlaceVisited = async (id: string, visited: boolean, rating?: number, notes?: string) => {
@@ -148,8 +184,12 @@ export default function App() {
     const updatedPlace = { 
       ...placeToUpdate, 
       visited,
-      ...(rating !== undefined && { rating }),
-      ...(notes !== undefined && { notes })
+      rating: visited ? rating : undefined,  // Clear rating if not visited
+      notes: visited ? notes : undefined,    // Clear notes if not visited
+      name: placeToUpdate.name,
+      type: placeToUpdate.type,
+      location: placeToUpdate.location,
+      cuisine: placeToUpdate.cuisine
     };
     
     try {
@@ -161,8 +201,12 @@ export default function App() {
         },
         body: JSON.stringify({ 
           visited,
-          ...(rating !== undefined && { rating }),
-          ...(notes !== undefined && { notes })
+          rating: visited ? rating : null,  // Send null to clear rating
+          notes: visited ? notes : null,    // Send null to clear notes
+          name: placeToUpdate.name,
+          type: placeToUpdate.type,
+          location: placeToUpdate.location,
+          cuisine: placeToUpdate.cuisine
         })
       });
 
@@ -192,23 +236,77 @@ export default function App() {
   };
 
   const handleCardClick = async (place: Place) => {
-    // Fetch the latest place details from backend
-    const latestPlace = await handleGetPlace(place.placeId);
-    
-    // Use the latest data if available, otherwise fallback to the place passed in
-    setSelectedPlace(latestPlace || place);
-    setDetailsDialogOpen(true);
+    try {
+      // Fetch the latest place details from backend
+      const latestPlace = await handleGetPlace(place.placeId);
+      
+      // Use the latest data if available, otherwise fallback to the place passed in
+      setSelectedPlace(latestPlace || place);
+      setDetailsDialogOpen(true);
+    } catch (error) {
+      console.error('Error in handleCardClick:', error);
+      // Still open dialog with cached data if fetch fails
+      setSelectedPlace(place);
+      setDetailsDialogOpen(true);
+    }
   };
 
-  const handleUpdatePlace = (
+  const handleUpdatePlace = async (
     id: string,
     updates: Partial<Place>,
   ) => {
-    setPlaces(
-      places.map((place) =>
-        place.placeId === id ? { ...place, ...updates } : place,
-      ),
-    );
+    // Use selectedPlace which has full data including openingHours
+    // Fall back to places array if selectedPlace isn't available
+    const placeToUpdate = selectedPlace?.placeId === id ? selectedPlace : places.find(p => p.placeId === id);
+    
+    if (!placeToUpdate) {
+      toast.error("Could not find place to update");
+      return;
+    }
+
+    try {
+      // Send update to backend
+      const response = await fetch(`${API_BASE_URL}/places/update/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...updates,
+          // Include required fields that backend expects
+          name: updates.name || placeToUpdate.name,
+          type: updates.type || placeToUpdate.type,
+          location: placeToUpdate.location,
+          cuisine: updates.cuisine !== undefined ? updates.cuisine : placeToUpdate.cuisine
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update place');
+      }
+
+      // Update local state - merge updates while preserving all existing fields
+      const updatedPlace: Place = {
+        ...placeToUpdate,  // Start with all existing fields (including openingHours, fullAddress, etc.)
+        ...updates,        // Override only the fields being updated
+      };
+      
+      const updated = places.map((place) =>
+        place.placeId === id ? updatedPlace : place
+      );
+      setPlaces(updated);
+      placesCache = { ts: Date.now(), data: updated };
+      
+      // Update the selected place if it's currently open in the dialog
+      setSelectedPlace(updatedPlace);
+
+      // Show success message
+      toast.success(`${updates.name || placeToUpdate.name} has been updated`);
+    } catch (error) {
+      console.error('Error updating place:', error);
+      toast.error(`Failed to update ${placeToUpdate.name}. Please try again.`);
+      throw error; // Re-throw so PlaceDetailsDialog knows it failed
+    }
   };
 
   const handleRateDialogClose = () => {
@@ -423,6 +521,27 @@ export default function App() {
           onOpenChange={setDetailsDialogOpen}
           onUpdatePlace={handleUpdatePlace}
       />
+
+      {/* Unvisit Confirmation Dialog */}
+      <AlertDialog open={unvisitConfirmDialogOpen} onOpenChange={setUnvisitConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark as Not Visited?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark "{placeToUnvisit?.name}" as not visited? 
+              This will remove your rating and notes for this place.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelUnvisit}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUnvisit}>
+              Yes, Mark as Not Visited
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
   );

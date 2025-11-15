@@ -31,7 +31,7 @@ public class FeedService {
         return places;
     }
 
-    @Cacheable("places")
+    @Cacheable(value = "places", key = "#placeId")
     public Place GetPlace(String placeId) {
         UUID convertedUuid = UUID.fromString(placeId);
 
@@ -52,6 +52,11 @@ public class FeedService {
         {
             Map<String, List<Place.OpeningHoursPeriod>> openingHoursMap = convertToOpeningHoursMap(placeDetails.getOpeningHours());
             place.setOpeningHours(openingHoursMap);
+        }
+
+        if (place.getFullAddress() == null)
+        {
+            place.setFullAddress(placeDetails.getFormattedAddress());
         }
 
         return place;
@@ -105,7 +110,8 @@ public class FeedService {
                 .toList();
     }
 
-    public void AddPlace(AddPlaceRequest request) {
+    @CachePut(value = "places", key = "#result.placeId.toString()")
+    public Place AddPlace(AddPlaceRequest request) {
         Place newPlace = new Place();
         newPlace.setPlaceId(UUID.randomUUID());
         newPlace.setName(request.getName());
@@ -136,6 +142,7 @@ public class FeedService {
 
 
         placeRepository.save(newPlace);
+        return newPlace;
     }
 
     private Map<String, List<Place.OpeningHoursPeriod>> convertToOpeningHoursMap(PlaceDetailsResponse.OpeningHour regularOpeningHours) {
@@ -161,7 +168,7 @@ public class FeedService {
         return map;
     }
 
-    @CachePut(value = "places", key = "#placeId")
+    @CacheEvict(value = "places", key = "#placeId")
     public void UpdatePlace(String placeId, UpdatePlaceRequest request)
     {
         UUID convertedUuid = UUID.fromString(placeId);
@@ -169,8 +176,12 @@ public class FeedService {
                 .orElseThrow(() -> new IllegalArgumentException("Place not found: " + convertedUuid));
         existingPlace.setRating(request.getRating());
         existingPlace.setNotes(request.getNotes());
+        existingPlace.setName(request.getName());
+        existingPlace.setLocation(request.getLocation());
+        existingPlace.setCuisine(request.getCuisine());
+        existingPlace.setType(request.getType());
         existingPlace.setLastUpdatedDateTime(new Date());
-        existingPlace.setVisited(true);
+        existingPlace.setVisited(request.isVisited());
         placeRepository.save(existingPlace);
     }
 

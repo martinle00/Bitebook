@@ -14,6 +14,7 @@ export interface Place {
     fullAddress?: string;
     openingHours?: { [key: string]: Array<OpeningHoursPeriod> };
     isPermanentlyClosed?: boolean;
+    cuisine?: string;
 }
 
 interface OpeningHoursPeriod {
